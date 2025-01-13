@@ -6,7 +6,7 @@ import time
 from collections import deque
 
 # Configure Gemini
-GOOGLE_API_KEY = "AIzaSyCQ9AuL-ywXfLY6p9IetAQ6OBGsbE2Wuxg"  # Your API key
+GOOGLE_API_KEY = "your api key"  # Your API key
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # Initialize speech recognizer
