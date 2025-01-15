@@ -1,138 +1,92 @@
-import streamlit as st
 import fitz  # PyMuPDF
-import speech_recognition as sr
+from flask import Flask, render_template, request, jsonify
+import os
+import io
+from audio import AudioTranscriber
+from job_description_parser import parse_job_description
+from resume_parser import parse_resume
 import google.generativeai as genai
-import time
-from collections import deque
+
+# Flask App
+app = Flask(__name__)
 
 # Configure Gemini
-GOOGLE_API_KEY = "your api key"  # Your API key
+GOOGLE_API_KEY = "Your API Key"  
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Initialize speech recognizer
-recognizer = sr.Recognizer()
+# Global variables
+transcriber = AudioTranscriber()
 
-# Session state for storing resume text, chat history, and interview state
-if 'resume_text' not in st.session_state:
-    st.session_state.resume_text = ""
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = deque(maxlen=10)  # Store last 10 interactions
-if 'interview_active' not in st.session_state:
-    st.session_state.interview_active = False
+def parse_pdf(file):
+    """Extract text from a PDF file."""
+    doc = fitz.open(stream=file, filetype="pdf")  # Open the file directly from the stream
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text
 
-def parse_pdf(file_content):
-    """Extracts text from a PDF file using BytesIO."""
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/start_interview', methods=['POST'])
+def start_interview():
+    resume_file = request.files.get('resume')
+    job_description = request.form.get('job_description', '')
+
+    if not resume_file or not job_description:
+        return jsonify({"error": "Both resume and job description are required."}), 400
+
     try:
-        document = fitz.open(stream=file_content, filetype="pdf")
-        text = ""
-        for page_num in range(len(document)):
-            page = document[page_num]
-            text += page.get_text()
-        document.close()
-        return text.strip()
+       
+        if resume_file.filename.endswith('.pdf'):
+            resume_text = parse_pdf(resume_file.read())  
+        else:
+            return jsonify({"error": "Only PDF resumes are supported."}), 400
     except Exception as e:
-        return f"Error reading PDF: {e}"
+        return jsonify({"error": f"Error processing resume: {e}"}), 400
 
-def transcribe_audio():
-    """Captures and transcribes live audio continuously."""
-    with sr.Microphone() as source:
-        recognizer.adjust_for_ambient_noise(source, duration=1)
-        try:
-            st.info("Listening... Speak now!")
-            audio = recognizer.listen(source, timeout=None, phrase_time_limit=5)  # Listen indefinitely
-            transcription = recognizer.recognize_google(audio)
-            return transcription
-        except sr.WaitTimeoutError:
-            return None  # No speech detected
-        except sr.UnknownValueError:
-            return None  # Could not understand the audio
-        except sr.RequestError as e:
-            return f"Could not request results: {e}"
+    # Parse job description
+    parsed_job_description = parse_job_description(job_description)
 
-def generate_response(question: str, resume_text: str = "", job_description: str = "") -> str:
-    """Generate a response using the Gemini API, assuming the role of the interviewee."""
+    return render_template('interview.html', 
+                           resume=resume_text, 
+                           job_description=parsed_job_description)
+
+@app.route('/transcribe', methods=['POST'])
+def transcribe():
+    try:
+        transcription = transcriber.transcribe_audio()
+        if transcription.get("success"):
+            return jsonify({"transcription": transcription.get("transcription")})  
+        else:
+            return jsonify({"error": "Could not transcribe audio."}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/generate_response', methods=['POST'])
+# app.py (generate_response route)
+def generate_response():
+    question = request.json.get('question', '')
+    resume_text = request.json.get('resume_text', '')
+    job_description = request.json.get('job_description', '')
+
+    if not question:
+        return jsonify({"error": "Question is required."}), 400
+
     try:
         model = genai.GenerativeModel('gemini-pro')
-        
-        # Hardcoded prompt for the AI to act as the interviewee
         prompt = f"""
-        You are a candidate in a job interview. The interviewer has asked you the following question:
-
+        Respond to the following interview question:
         Question: {question}
-
-        Your resume information is as follows:
-        {resume_text}
-
-        The job description for the role you are applying for is:
-        {job_description}
-
-        Please respond to the interviewer's question in the first person, as if you are the candidate. 
-        Use the information from your resume and the job description to craft a detailed and professional response.
-        Be concise, clear, and confident in your answers. If the question is about your resume, provide specific examples 
-        from your experience, education, or projects. If the question is about your skills, highlight relevant skills 
-        from your resume that match the job description.
+        Skills: {resume_text}
+        Job: {job_description}
         """
-        
+       
         response = model.generate_content(prompt)
-        return response.text
+        return jsonify({"response": response.text})
     except Exception as e:
-        return f"Error generating response: {str(e)}"
+        return jsonify({"error": str(e)}), 500
 
-# Streamlit UI
-st.title("AI Interview Simulator")
-
-# Upload Resume PDF
-uploaded_file = st.file_uploader("Upload Resume PDF", type="pdf")
-if uploaded_file is not None:
-    resume_text = parse_pdf(uploaded_file.read())
-    if resume_text.startswith("Error"):
-        st.error(resume_text)
-    else:
-        st.session_state.resume_text = resume_text
-        st.success("Resume uploaded successfully.")
-
-# Job Description Input
-job_description = st.text_area("Enter Job Description")
-
-# Start/Stop Interview Buttons
-if not st.session_state.interview_active:
-    if st.button("Start Interview"):
-        st.session_state.interview_active = True
-        st.session_state.chat_history = deque(maxlen=10)  # Reset chat history
-        st.write("Interview started. Speak into your microphone...")
-
-if st.session_state.interview_active:
-    if st.button("Stop Interview"):
-        st.session_state.interview_active = False
-        st.write("Interview stopped. You can start again if needed.")
-
-# Continuously listen and respond during the interview
-if st.session_state.interview_active:
-    while st.session_state.interview_active:
-        # Transcribe audio
-        transcription = transcribe_audio()
-        if transcription:
-            # Add the question to chat history
-            st.session_state.chat_history.append(("Interviewer", transcription))
-            
-            # Generate AI response (as the interviewee)
-            response = generate_response(
-                transcription, 
-                st.session_state.get('resume_text', ''), 
-                job_description
-            )
-            # Add AI's response to chat history
-            st.session_state.chat_history.append(("Candidate", response))
-
-            # Display only the AI's response (as the interviewee)
-            st.write(f"**Candidate:** {response}")
-
-        # Add a small delay to avoid overloading the app
-        time.sleep(1)
-
-# Option to start the interview again after stopping
-if not st.session_state.interview_active:
-    if st.button("Start Interview Again"):
-        st.session_state.interview_active = True
-        st.session_state.chat_history = deque(maxlen=10)  # Reset chat history
-        st.write("Interview started again. Speak into your microphone...")
+if __name__ == '__main__':
+    app.run(debug=True)

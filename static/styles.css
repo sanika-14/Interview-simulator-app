@@ -1,0 +1,127 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #a1acb369;
+    color: rgb(17, 17, 17);
+    padding: 20px 0;
+    text-align: center;
+    font-size: 24px;
+}
+
+h1 {
+    font-size: 36px;
+    font-weight: bold;
+}
+
+main {
+    width: 80%;
+    height: 70%;
+    margin: 30px auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 2px solid #555;  
+}
+
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+label {
+    font-size: 18px;
+    color: #080808;
+}
+
+input[type="file"],
+textarea {
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #2c2929;
+    border-radius: 6px;
+    width: 100%;
+}
+
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+
+#questions {
+    margin-top: 30px;
+}
+
+#questions p {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+#questions strong {
+    color: #2980b9;
+}
+
+button {
+    width: 50%;               
+    padding: 10px 20px;       
+    font-size: 20px;          
+    cursor: pointer;         
+    margin: 20px auto;        
+    display: block;   
+    background-color: #3498dba6;   
+    border-radius: 12px;      
+    border: #f4f7f6;  
+}
+
+button:hover {
+    background-color: #0b293d;
+}
+
+@media (max-width: 768px) {
+    main {
+        width: 90%;
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+
+    form {
+        gap: 15px;
+    }
+
+    button {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    input[type="file"], 
+    textarea {
+        font-size: 14px;
+    }
+}

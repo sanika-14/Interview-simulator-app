@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Session</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        async function transcribeAudio() {
+            
+            document.getElementById('questions').innerHTML += `<p> Listening...</p>`;
+
+            try {
+                const response = await fetch('/transcribe', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.transcription) {
+                    
+                    const questionsSection = document.getElementById('questions');
+                    const lastQuestion = questionsSection.querySelector('p:last-child');
+                    lastQuestion.innerHTML = `<strong>Question:</strong> ${data.transcription}`;
+
+                   
+                    generateResponse(data.transcription);
+                } else {
+                    alert('Transcription failed: ' + data.error);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function generateResponse(question) {
+            try {
+                const resumeText = document.getElementById('resume_text').value;
+                const jobDescription = document.getElementById('job_description').value;
+                const response = await fetch('/generate_response', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, resume_text: resumeText, job_description: jobDescription })
+                });
+                const data = await response.json();
+                if (data.response) {
+                    document.getElementById('questions').innerHTML += `<p><strong>Answer:</strong> ${data.response}</p>`;
+                } else {
+                    alert('Response generation failed: ' + data.error);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Interview Session</h1>
+    </header>
+    <main>
+        <section id="questions">
+            <h2>Live Interview</h2>
+        </section>
+        <button onclick="transcribeAudio()">Start Listening</button>
+
+        <textarea id="resume_text" hidden>{{ resume }}</textarea>
+        <textarea id="job_description" hidden>{{ job_description }}</textarea>
+    </main>
+</body>
+</html>
