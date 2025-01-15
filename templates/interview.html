@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/styles.css">
     <script>
         async function transcribeAudio() {
-            // Show the 'Listening...' message
+            
             document.getElementById('questions').innerHTML += `<p> Listening...</p>`;
 
             try {
@@ -16,12 +16,12 @@
                 });
                 const data = await response.json();
                 if (data.transcription) {
-                    // Immediately overwrite 'Listening...' with the actual question
+                    
                     const questionsSection = document.getElementById('questions');
                     const lastQuestion = questionsSection.querySelector('p:last-child');
                     lastQuestion.innerHTML = `<strong>Question:</strong> ${data.transcription}`;
 
-                    // Generate the response for the question
+                   
                     generateResponse(data.transcription);
                 } else {
                     alert('Transcription failed: ' + data.error);
