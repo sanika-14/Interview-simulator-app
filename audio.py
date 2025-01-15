@@ -23,9 +23,9 @@ class AudioTranscriber:
                 mic = sr.Microphone()
                 
             with mic as source:
-                # Shortened ambient noise adjustment time for faster response
+                
                 self.recognizer.adjust_for_ambient_noise(source, duration=0.1)
-                # Reduced timeout and phrase time limit to make transcription faster
+                
                 audio = self.recognizer.listen(source, timeout=3, phrase_time_limit=5)
                 return {"success": True, "transcription": self.recognizer.recognize_google(audio)}
         except sr.UnknownValueError:

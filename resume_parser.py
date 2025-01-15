@@ -1,13 +1,13 @@
 def parse_resume(resume_text):
     """Parses the resume text to extract relevant information such as skills, experiences, and qualifications."""
-    # Placeholder for parsed data
+    
     parsed_data = {
         "skills": [],
         "experiences": [],
         "qualifications": []
     }
     
-    # Example parsing logic (to be implemented)
+    
     lines = resume_text.splitlines()
     for line in lines:
         if "Skill:" in line:

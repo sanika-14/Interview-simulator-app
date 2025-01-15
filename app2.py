@@ -11,7 +11,7 @@ import google.generativeai as genai
 app = Flask(__name__)
 
 # Configure Gemini
-GOOGLE_API_KEY = "AIzaSyDWSXG0UDgAvsuZlzOJ2UiantXTxE_1jgQ"  # Replace with your actual API key
+GOOGLE_API_KEY = "Your API Key"  
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # Global variables
@@ -38,9 +38,9 @@ def start_interview():
         return jsonify({"error": "Both resume and job description are required."}), 400
 
     try:
-        # If the file is a PDF, extract the text from it
+       
         if resume_file.filename.endswith('.pdf'):
-            resume_text = parse_pdf(resume_file.read())  # Read the file into memory
+            resume_text = parse_pdf(resume_file.read())  
         else:
             return jsonify({"error": "Only PDF resumes are supported."}), 400
     except Exception as e:
@@ -58,7 +58,7 @@ def transcribe():
     try:
         transcription = transcriber.transcribe_audio()
         if transcription.get("success"):
-            return jsonify({"transcription": transcription.get("transcription")})  # Ensure transcription text is returned
+            return jsonify({"transcription": transcription.get("transcription")})  
         else:
             return jsonify({"error": "Could not transcribe audio."}), 500
     except Exception as e:
@@ -82,7 +82,7 @@ def generate_response():
         Skills: {resume_text}
         Job: {job_description}
         """
-        # Reduced prompt length to only necessary data
+       
         response = model.generate_content(prompt)
         return jsonify({"response": response.text})
     except Exception as e:
