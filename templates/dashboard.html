@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Resume & Job Description</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <h1>Upload Your Resume & Job Description</h1>
+        <a href="/logout" class="logout-link">Logout</a> <!-- Logout button -->
+    </header>
+    <main class="container">
+        <form id="upload_form" action="/start_interview" method="POST" enctype="multipart/form-data">
+            <!-- Hidden field for Firebase token -->
+            <input type="hidden" id="user_token" name="user_token">
+
+            <!-- Resume Upload -->
+            <div class="form-group">
+                <label for="resume">Upload Resume (PDF):</label>
+                <input type="file" id="resume" name="resume" accept=".pdf" required>
+            </div>
+
+            <!-- Job Description -->
+            <div class="form-group">
+                <label for="job_description">Job Description:</label>
+                <textarea id="job_description" name="job_description" rows="8" required></textarea>
+            </div>
+
+            <button class="btn" type="submit">Submit</button>
+        </form>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+ 
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Check user authentication and token
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                user.getIdToken().then((idToken) => {
+                    // Set the token in the hidden input field
+                    document.getElementById('user_token').value = idToken;
+                }).catch((error) => {
+                    console.error("Error fetching token:", error);
+                    alert('Authentication error. Please log in again.');
+                    window.location.href = '/'; // Redirect to login page
+                });
+            } else {
+                alert('You need to be logged in to upload files.');
+                window.location.href = '/'; // Redirect to login page
+            }
+        });
+
+        // Ensure proper file type is uploaded
+        document.getElementById('upload_form').addEventListener('submit', function(event) {
+            const resumeFile = document.getElementById('resume').files[0];
+            if (resumeFile && resumeFile.type !== 'application/pdf') {
+                alert('Only PDF files are allowed for resumes');
+                event.preventDefault(); // Prevent form submission
+            }
+        });
+    </script>
+</body>
+</html>

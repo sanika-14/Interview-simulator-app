@@ -6,62 +6,99 @@
     <title>Interview Session</title>
     <link rel="stylesheet" href="/static/styles.css">
     <script>
+        // Function to start audio transcription
         async function transcribeAudio() {
-            
-            document.getElementById('questions').innerHTML += `<p> Listening...</p>`;
+            console.log("Starting transcription...");  // Debugging
+
+            // Add a "Listening..." message to the UI
+            const questionsSection = document.getElementById('questions');
+            questionsSection.innerHTML += `<p><strong>System:</strong> Listening...</p>`;
 
             try {
+                // Send a request to the backend to transcribe audio
                 const response = await fetch('/transcribe', {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                 });
                 const data = await response.json();
-                if (data.transcription) {
-                    
-                    const questionsSection = document.getElementById('questions');
-                    const lastQuestion = questionsSection.querySelector('p:last-child');
-                    lastQuestion.innerHTML = `<strong>Question:</strong> ${data.transcription}`;
+                console.log("Response from /transcribe:", data);  // Debugging
 
-                   
+                if (data.transcription) {
+                    // Update the UI with the transcribed question
+                    const lastQuestion = questionsSection.querySelector('p:last-child');
+                    lastQuestion.innerHTML = `<strong>Interviewer:</strong> ${data.transcription}`;
+
+                    // Generate a response to the transcribed question
                     generateResponse(data.transcription);
                 } else {
                     alert('Transcription failed: ' + data.error);
                 }
             } catch (err) {
                 console.error('Error:', err);
+                alert('An error occurred while transcribing audio.');
             }
         }
 
+        // Function to generate a response to the question
         async function generateResponse(question) {
             try {
                 const resumeText = document.getElementById('resume_text').value;
                 const jobDescription = document.getElementById('job_description').value;
+                console.log("Sending request to generate response...");  // Debugging
+
+                // Send the question, resume, and job description to the backend
                 const response = await fetch('/generate_response', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question, resume_text: resumeText, job_description: jobDescription })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        resume_text: resumeText,
+                        job_description: jobDescription,
+                    }),
                 });
                 const data = await response.json();
+                console.log("Response from /generate_response:", data);  // Debugging
+
                 if (data.response) {
-                    document.getElementById('questions').innerHTML += `<p><strong>Answer:</strong> ${data.response}</p>`;
+                    // Display the generated response in the UI
+                    const questionsSection = document.getElementById('questions');
+                    questionsSection.innerHTML += `<p><strong>Interviewee:</strong> ${data.response}</p>`;
                 } else {
                     alert('Response generation failed: ' + data.error);
                 }
             } catch (err) {
                 console.error('Error:', err);
+                alert('An error occurred while generating a response.');
             }
         }
     </script>
 </head>
-<body>
+<body class="interview-page">
     <header>
         <h1>Interview Session</h1>
+        <a href="/logout" class="logout-link">Logout</a>
     </header>
     <main>
+        <!-- Display Introduction -->
+        <section id="introduction">
+            <h2>Introduction</h2>
+            <p>{{ introduction }}</p>
+        </section>
+
+        <!-- Live Interview Section -->
         <section id="questions">
             <h2>Live Interview</h2>
+            <p><strong>System:</strong> The interview will begin shortly. Please click "Start Listening" when you're ready.</p>
         </section>
+
+        <!-- Button to start listening -->
         <button onclick="transcribeAudio()">Start Listening</button>
 
+        <!-- Hidden textareas for resume and job description -->
         <textarea id="resume_text" hidden>{{ resume }}</textarea>
         <textarea id="job_description" hidden>{{ job_description }}</textarea>
     </main>

@@ -1,29 +1,187 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interview Simulator</title>
+    <title>AI Interview Simulator</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Firebase CDN Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 </head>
 <body>
-    <header class="header">
+    <header>
         <h1>AI Interview Simulator</h1>
     </header>
-    <main class="container">
-        <form class="form" action="/start_interview" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="resume">Upload Resume (PDF):</label>
-                <input type="file" id="resume" name="resume" accept=".pdf" required>
+    <main>
+        <div class="main-container">
+            <!-- Left Section -->
+            <div class="intro-section">
+                <h2>Welcome to AI Interview Simulator</h2>
+                <p>Enhance your interview skills with AI-powered insights.</p>
+                
             </div>
-            <div class="form-group">
-                <label for="job_description">Enter Job Description:</label>
-                <textarea id="job_description" name="job_description" rows="5" required></textarea>
+
+            <!-- Right Section -->
+            <div class="form-section">
+                <!-- Login Form -->
+                <div id="loginForm" class="form active">
+                    <h2>Login</h2>
+                    <form onsubmit="event.preventDefault(); loginUser();">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+                        
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" required>
+                        
+                        <button type="submit">Login</button>
+                    </form>
+                    <p><a href="#" onclick="showForm('forgotPasswordForm')">Forgot Password?</a></p>
+                    <p><a href="#" onclick="showForm('signupForm')">Don't have an account? Sign up</a></p>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signupForm" class="form">
+                    <h2>Sign Up</h2>
+                    <form onsubmit="event.preventDefault(); signupUser();">
+                        <label for="signupEmail">Email:</label>
+                        <input type="email" id="signupEmail" required>
+                        
+                        <label for="signupPassword">Password:</label>
+                        <input type="password" id="signupPassword" required>
+                        
+                        <button type="submit">Sign Up</button>
+                    </form>
+                    <p><a href="#" onclick="showForm('loginForm')">Already have an account? Log in</a></p>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="forgotPasswordForm" class="form">
+                    <h2>Forgot Password</h2>
+                    <form onsubmit="event.preventDefault(); sendResetLink();">
+                        <label for="forgotEmail">Email:</label>
+                        <input type="email" id="forgotEmail" required>
+                        
+                        <button type="submit">Send Reset Link</button>
+                    </form>
+                    <p><a href="#" onclick="showForm('loginForm')">Back to Login</a></p>
+                </div>
             </div>
-            <button class="btn" type="submit">Start Interview</button>
-        </form>
+        </div>
     </main>
+    <script>
+        const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+ 
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        function showForm(formId) {
+            const forms = document.querySelectorAll('.form');
+            forms.forEach(form => form.classList.remove('active'));
+            document.getElementById(formId).classList.add('active');
+        }
+
+        // Login function
+        function loginUser() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                alert("Please enter both email and password.");
+                return;
+            }
+
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    const user = userCredential.user;
+                    user.getIdToken().then(idToken => {
+                        fetch('/verify_token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ idToken })
+                        }).then(response => response.json())
+                          .then(data => {
+                              if (data.success) {
+                                  window.location.href = "/upload"; // Redirect on success
+                              } else {
+                                  alert("Login failed: " + data.error);
+                              }
+                          }).catch(err => {
+                              console.error("Server error:", err);
+                              alert("Server error. Please try again later.");
+                          });
+                    });
+                })
+                .catch(error => {
+                    console.error("Login error:", error);
+                    alert("Login failed: " + error.message);
+                });
+        }
+
+        // Signup function
+        function signupUser() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            if (!email || !password) {
+                alert("Please enter both email and password.");
+                return;
+            }
+
+            firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    const user = userCredential.user;
+                    user.getIdToken().then(idToken => {
+                        fetch('/verify_token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ idToken })
+                        }).then(response => response.json())
+                          .then(data => {
+                              if (data.success) {
+                                  window.location.href = "/upload"; // Redirect on success
+                              } else {
+                                  alert("Signup failed: " + data.error);
+                              }
+                          }).catch(err => {
+                              console.error("Server error:", err);
+                              alert("Server error. Please try again later.");
+                          });
+                    });
+                })
+                .catch(error => {
+                    console.error("Signup error:", error);
+                    alert("Signup failed: " + error.message);
+                });
+        }
+
+        // Send Reset Link function
+        function sendResetLink() {
+            const email = document.getElementById('forgotEmail').value;
+
+            if (!email) {
+                alert("Please enter your email address.");
+                return;
+            }
+
+            firebase.auth().sendPasswordResetEmail(email)
+                .then(() => {
+                    alert("Password reset link sent to your email address.");
+                    showForm('loginForm'); // Redirect to login form
+                })
+                .catch(error => {
+                    console.error("Error sending reset link:", error);
+                    alert("Error: " + error.message);
+                });
+        }
+    </script>
 </body>
 </html>
